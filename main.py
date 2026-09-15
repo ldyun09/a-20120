@@ -6,7 +6,7 @@ import plotly.express as px
 # 페이지 기본 설정
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="영화 데이터 그래프 - 분포와 관계",
+    page_title="영화 데이터 분석 - 6대 종합 시각화",
     page_icon="🎬",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -66,8 +66,8 @@ df = load_data()
 # ---------------------------------------------------------
 # 헤더 영역
 # ---------------------------------------------------------
-st.markdown('<div class="main-header">🎬 영화 데이터 그래프 - 분포와 관계</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">KOBIS 1년간 박스오피스 Top 10 영화 216편의 장르 분포 및 흥행 지표 관계 분석</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">🎬 영화 데이터 분석 - 종합 시각화</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">KOBIS 1년간 박스오피스 Top 10 영화 216편의 분포 및 지표 간 관계 분석</div>', unsafe_allow_html=True)
 st.divider()
 
 # ---------------------------------------------------------
@@ -180,7 +180,7 @@ st.markdown("""
 st.divider()
 
 # ---------------------------------------------------------
-# 그래프 3: 총 관객 수 분포 (히스토그램) - [NEW 추가]
+# 그래프 3: 총 관객 수 분포 (히스토그램)
 # ---------------------------------------------------------
 st.subheader("3. 총 관객 수 분포 (히스토그램)")
 
@@ -205,7 +205,6 @@ fig_hist.update_layout(
 
 st.plotly_chart(fig_hist, use_container_width=True)
 
-# 가장 관객이 많은 영화 및 주요 구간 동적 계산
 top_movie_idx = filtered_df['total_audi'].idxmax()
 top_movie_name = filtered_df.loc[top_movie_idx, 'movieNm']
 top_movie_audi = int(filtered_df.loc[top_movie_idx, 'total_audi'])
@@ -223,30 +222,49 @@ st.markdown(f"""
 st.divider()
 
 # ---------------------------------------------------------
-# 그래프 4: 개봉일 스크린 수 vs 총 관객 수 (관계 산점도)
+# 그래프 4: 개봉일 스크린 수 vs 총 관객 수 (산점도) - [새로 반영된 부분]
 # ---------------------------------------------------------
-st.subheader("4. 개봉일 스크린 수와 총 관객 수의 관계")
+st.subheader("4. 개봉일 스크린 수와 총 관객 수의 산점도")
 
 fig_scatter_scrn = px.scatter(
     filtered_df,
     x='first_scrn',
     y='total_audi',
     color='main_genre',
-    size='days_in_top10',
     hover_name='movieNm',
-    hover_data={'first_scrn': ':,f', 'total_audi': ':,f', 'days_in_top10': True, 'main_genre': False},
-    labels={'first_scrn': '개봉일 스크린 수 (개)', 'total_audi': '총 관객 수 (명)', 'main_genre': '장르', 'days_in_top10': 'Top 10 유지일수'},
+    hover_data={
+        'first_scrn': ':,f',
+        'total_audi': ':,f',
+        'main_genre': True
+    },
+    labels={
+        'first_scrn': '개봉일 스크린 수 (개)',
+        'total_audi': '총 관객 수 (명)',
+        'main_genre': '장르'
+    },
     opacity=0.8,
     color_discrete_sequence=px.colors.qualitative.Set2
 )
 
-fig_scatter_scrn.update_layout(height=500, margin=dict(t=30, b=30, l=10, r=10), xaxis=dict(tickformat=","), yaxis=dict(tickformat=","))
+fig_scatter_scrn.update_traces(
+    marker=dict(size=10),
+    hovertemplate="<b>영화명: %{hovertext}</b><br>장르: %{customdata[2]}<br>개봉일 스크린 수: %{x:,.0f}개<br>총 관객 수: %{y:,.0f}명<extra></extra>"
+)
+
+fig_scatter_scrn.update_layout(
+    height=500,
+    margin=dict(t=30, b=30, l=10, r=10),
+    xaxis=dict(tickformat=","),
+    yaxis=dict(tickformat=","),
+    legend_title_text='장르'
+)
+
 st.plotly_chart(fig_scatter_scrn, use_container_width=True)
 
 st.markdown("""
 <div class="insight-box">
     <div class="insight-title">💡 이 그래프로 알 수 있는 것</div>
-    개봉 초기에 확보한 스크린 수가 많을수록 최종 총 관객 수가 증가하는 뚜렷한 양의 상관관계를 보이며, 초기 상영관 점유율이 영화 흥행 규모의 주요한 결정 요인임을 나타냅니다.
+    개봉 초기에 확보한 스크린 수(first_scrn)가 많을수록 최종 총 관객 수(total_audi)가 증가하는 뚜렷한 양의 관계를 확인할 수 있습니다. 각 점에 마우스를 올리면 영화명과 정확한 스크린 수 및 총 관객 수를 확인할 수 있으며, 장르별로 점 색상이 구분되어 장르별 초반 배급 규모 차이도 한눈에 파악 가능합니다.
 </div>
 """, unsafe_allow_html=True)
 
