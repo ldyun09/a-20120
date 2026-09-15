@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS 스타일링 (그래프 하단 '알 수 있는 것' 구역 강조)
+# Custom CSS 스타일링
 st.markdown("""
     <style>
     .main-header {
@@ -52,16 +52,13 @@ DATA_URL = "https://raw.githubusercontent.com/greatsong/modudata/main/data/kobis
 @st.cache_data
 def load_data():
     df = pd.read_csv(DATA_URL)
-    
-    # 1. 장르 전처리: '|' 구분자로 여러 개 적힌 영화는 첫 번째 장르만 취함
+    # 장르 전처리: '|' 구분자로 여러 개 적힌 영화는 첫 번째 장르만 취함
     df['main_genre'] = df['genre'].astype(str).apply(lambda x: x.split('|')[0].strip())
-    
-    # 2. 수치형 컬럼 보정
+    # 수치형 데이터 안전 변환
     numeric_cols = ['first_scrn', 'first_show', 'first_week_audi', 'total_audi', 'days_in_top10']
     for col in numeric_cols:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-            
     return df
 
 df = load_data()
@@ -70,7 +67,7 @@ df = load_data()
 # 헤더 영역
 # ---------------------------------------------------------
 st.markdown('<div class="main-header">🎬 영화 데이터 그래프 - 분포와 관계</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">KOBIS 1년간 박스오피스 Top 10 영화 216편의 장르 분포 및 주요 흥행 지표 관계 분석</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">KOBIS 1년간 박스오피스 Top 10 영화 216편의 장르 분포 및 흥행 지표 관계 분석</div>', unsafe_allow_html=True)
 st.divider()
 
 # ---------------------------------------------------------
@@ -109,7 +106,7 @@ st.sidebar.markdown(f"**📊 현재 표시 데이터:** `{len(filtered_df)}` / `
 if not filtered_df.empty:
     m1, m2, m3, m4 = st.columns(4)
     with m1:
-        st.metric("분석 영화 수", f"{len(filtered_df):,} 편")
+        st.metric("총 분석 영화 수", f"{len(filtered_df):,} 편")
     with m2:
         st.metric("평균 총 관객 수", f"{int(filtered_df['total_audi'].mean()):,} 명")
     with m3:
@@ -119,11 +116,11 @@ if not filtered_df.empty:
 st.divider()
 
 if filtered_df.empty:
-    st.warning("선택한 조건에 해당하는 영화 데이터가 없습니다. 필터를 변경해 주세요.")
+    st.warning("선택한 조건에 해당하는 영화 데이터가 없습니다. 필터를 조정해 주세요.")
     st.stop()
 
 # ---------------------------------------------------------
-# 그래프 1: 장르별 영화 편수 (Plotly 도넛 그래프)
+# 그래프 1: 장르별 영화 편수 (도넛 그래프)
 # ---------------------------------------------------------
 st.subheader("1. 장르별 영화 편수 분포 (도넛 그래프)")
 
@@ -138,7 +135,6 @@ fig_donut = px.pie(
     color_discrete_sequence=px.colors.qualitative.Pastel
 )
 
-# 툴팁에 마우스를 올리면 편수와 비율이 보이도록 설정
 fig_donut.update_traces(
     textinfo='percent+label',
     hovertemplate='<b>장르: %{label}</b><br>영화 편수: %{value}편<br>비율: %{percent:.1%}<extra></extra>'
@@ -152,20 +148,53 @@ fig_donut.update_layout(
 
 st.plotly_chart(fig_donut, use_container_width=True)
 
-# 그래프 설명 및 구역 구분
 st.markdown("""
 <div class="insight-box">
     <div class="insight-title">💡 이 그래프로 알 수 있는 것</div>
-    개봉 영화 시장에서 특정 주요 장르(예: 드라마, 액션, 애니메이션 등)의 편수 비중이 대다수를 차지하며, 어떤 장르가 시장 공급의 중심인지를 직관적으로 파악할 수 있습니다.
+    개봉 영화 시장에서 특정 주요 장르(예: 드라마, 액션, 애니메이션 등)의 편수 비중이 대다수를 차지하며, 어떤 장르가 시장 공급의 중심인지를 명확히 파악할 수 있습니다.
 </div>
 """, unsafe_allow_html=True)
 
 st.divider()
 
 # ---------------------------------------------------------
-# 그래프 2: 개봉일 스크린 수 vs 총 관객 수 (관계 산점도)
+# 그래프 2: 장르 및 영화별 총 관객 수 (트리맵) - [NEW]
 # ---------------------------------------------------------
-st.subheader("2. 개봉일 스크린 수와 총 관객 수의 관계")
+st.subheader("2. 장르별 영화 총 관객 수 분포 (트리맵)")
+
+fig_treemap = px.treemap(
+    filtered_df,
+    path=[px.Constant("전체 장르"), 'main_genre', 'movieNm'],
+    values='total_audi',
+    color='main_genre',
+    color_discrete_sequence=px.colors.qualitative.Set3
+)
+
+# 마우스를 올리면 영화명과 총 관객 수가 보이도록 설정
+fig_treemap.update_traces(
+    hovertemplate="<b>%{label}</b><br>총 관객 수: %{value:,.0f}명<extra></extra>"
+)
+
+fig_treemap.update_layout(
+    margin=dict(t=30, b=30, l=10, r=10),
+    height=550
+)
+
+st.plotly_chart(fig_treemap, use_container_width=True)
+
+st.markdown("""
+<div class="insight-box">
+    <div class="insight-title">💡 이 그래프로 알 수 있는 것</div>
+    장르별 전체 관객 점유율 규모와 더불어, 해당 장르 내에서 어떤 특정 영화가 대흥행을 이끌어 전체 관객 수 지분을 차지했는지 한눈에 비교할 수 있습니다.
+</div>
+""", unsafe_allow_html=True)
+
+st.divider()
+
+# ---------------------------------------------------------
+# 그래프 3: 개봉일 스크린 수 vs 총 관객 수 (관계 산점도)
+# ---------------------------------------------------------
+st.subheader("3. 개봉일 스크린 수와 총 관객 수의 관계")
 
 fig_scatter_scrn = px.scatter(
     filtered_df,
@@ -199,7 +228,6 @@ fig_scatter_scrn.update_layout(
 
 st.plotly_chart(fig_scatter_scrn, use_container_width=True)
 
-# 그래프 설명 및 구역 구분
 st.markdown("""
 <div class="insight-box">
     <div class="insight-title">💡 이 그래프로 알 수 있는 것</div>
@@ -210,9 +238,9 @@ st.markdown("""
 st.divider()
 
 # ---------------------------------------------------------
-# 그래프 3: 개봉 첫 주 관객 수 vs 총 관객 수 (상관관계)
+# 그래프 4: 개봉 첫 주 관객 수 vs 총 관객 수 (상관관계 분석)
 # ---------------------------------------------------------
-st.subheader("3. 개봉 첫 주 관객 수와 총 관객 수의 상관관계")
+st.subheader("4. 개봉 첫 주 관객 수와 총 관객 수의 상관관계")
 
 fig_scatter_week = px.scatter(
     filtered_df,
@@ -244,7 +272,6 @@ fig_scatter_week.update_layout(
 
 st.plotly_chart(fig_scatter_week, use_container_width=True)
 
-# 그래프 설명 및 구역 구분
 st.markdown("""
 <div class="insight-box">
     <div class="insight-title">💡 이 그래프로 알 수 있는 것</div>
@@ -255,9 +282,9 @@ st.markdown("""
 st.divider()
 
 # ---------------------------------------------------------
-# 그래프 4: 장르별 Top 10 머문 날수 분포 (박스플롯)
+# 그래프 5: 장르별 Top 10 머문 날수 분포 (박스플롯)
 # ---------------------------------------------------------
-st.subheader("4. 장르별 Top 10 랭킹 유지 기간(일수) 분포")
+st.subheader("5. 장르별 Top 10 랭킹 유지 기간(일수) 분포")
 
 fig_box = px.box(
     filtered_df,
@@ -280,7 +307,6 @@ fig_box.update_layout(
 
 st.plotly_chart(fig_box, use_container_width=True)
 
-# 그래프 설명 및 구역 구분
 st.markdown("""
 <div class="insight-box">
     <div class="insight-title">💡 이 그래프로 알 수 있는 것</div>
