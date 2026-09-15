@@ -75,23 +75,12 @@ st.divider()
 # ---------------------------------------------------------
 st.sidebar.header("🔍 데이터 필터")
 
-# 장르 선택
 all_genres = sorted(df['main_genre'].unique().tolist())
-selected_genres = st.sidebar.multiselect(
-    "장르 선택",
-    options=all_genres,
-    default=all_genres
-)
+selected_genres = st.sidebar.multiselect("장르 선택", options=all_genres, default=all_genres)
 
-# 제작 국가 선택
 all_nations = sorted(df['nation'].dropna().unique().tolist())
-selected_nations = st.sidebar.multiselect(
-    "제작 국가 선택",
-    options=all_nations,
-    default=all_nations
-)
+selected_nations = st.sidebar.multiselect("제작 국가 선택", options=all_nations, default=all_nations)
 
-# 필터 적용
 filtered_df = df[
     (df['main_genre'].isin(selected_genres)) &
     (df['nation'].isin(selected_nations))
@@ -158,7 +147,7 @@ st.markdown("""
 st.divider()
 
 # ---------------------------------------------------------
-# 그래프 2: 장르 및 영화별 총 관객 수 (트리맵) - [NEW]
+# 그래프 2: 장르 및 영화별 총 관객 수 (트리맵)
 # ---------------------------------------------------------
 st.subheader("2. 장르별 영화 총 관객 수 분포 (트리맵)")
 
@@ -170,7 +159,6 @@ fig_treemap = px.treemap(
     color_discrete_sequence=px.colors.qualitative.Set3
 )
 
-# 마우스를 올리면 영화명과 총 관객 수가 보이도록 설정
 fig_treemap.update_traces(
     hovertemplate="<b>%{label}</b><br>총 관객 수: %{value:,.0f}명<extra></extra>"
 )
@@ -192,9 +180,52 @@ st.markdown("""
 st.divider()
 
 # ---------------------------------------------------------
-# 그래프 3: 개봉일 스크린 수 vs 총 관객 수 (관계 산점도)
+# 그래프 3: 총 관객 수 분포 (히스토그램) - [NEW 추가]
 # ---------------------------------------------------------
-st.subheader("3. 개봉일 스크린 수와 총 관객 수의 관계")
+st.subheader("3. 총 관객 수 분포 (히스토그램)")
+
+fig_hist = px.histogram(
+    filtered_df,
+    x='total_audi',
+    nbins=25,
+    labels={'total_audi': '총 관객 수 (명)', 'count': '영화 편수'},
+    color_discrete_sequence=['#0284C7']
+)
+
+fig_hist.update_traces(
+    hovertemplate="<b>관객 수 구간: %{x}</b><br>영화 편수: %{y}편<extra></extra>"
+)
+
+fig_hist.update_layout(
+    margin=dict(t=30, b=30, l=10, r=10),
+    height=450,
+    yaxis_title="영화 편수 (개)",
+    xaxis=dict(tickformat=",")
+)
+
+st.plotly_chart(fig_hist, use_container_width=True)
+
+# 가장 관객이 많은 영화 및 주요 구간 동적 계산
+top_movie_idx = filtered_df['total_audi'].idxmax()
+top_movie_name = filtered_df.loc[top_movie_idx, 'movieNm']
+top_movie_audi = int(filtered_df.loc[top_movie_idx, 'total_audi'])
+
+under_2m_cnt = len(filtered_df[filtered_df['total_audi'] < 2000000])
+under_2m_pct = (under_2m_cnt / len(filtered_df)) * 100
+
+st.markdown(f"""
+<div class="insight-box">
+    <div class="insight-title">💡 이 그래프로 알 수 있는 것</div>
+    대부분의 영화({under_2m_pct:.1f}%, 총 {under_2m_cnt}편)가 <b>총 관객 수 200만 명 미만</b>의 하위 구간에 빽빽하게 집중되어 있으며, 가장 많은 관객을 동원한 최흥행작은 <b>'{top_movie_name}'</b> (총 {top_movie_audi:,}명)입니다.
+</div>
+""", unsafe_allow_html=True)
+
+st.divider()
+
+# ---------------------------------------------------------
+# 그래프 4: 개봉일 스크린 수 vs 총 관객 수 (관계 산점도)
+# ---------------------------------------------------------
+st.subheader("4. 개봉일 스크린 수와 총 관객 수의 관계")
 
 fig_scatter_scrn = px.scatter(
     filtered_df,
@@ -203,29 +234,13 @@ fig_scatter_scrn = px.scatter(
     color='main_genre',
     size='days_in_top10',
     hover_name='movieNm',
-    hover_data={
-        'first_scrn': ':,f',
-        'total_audi': ':,f',
-        'days_in_top10': True,
-        'main_genre': False
-    },
-    labels={
-        'first_scrn': '개봉일 스크린 수 (개)',
-        'total_audi': '총 관객 수 (명)',
-        'main_genre': '장르',
-        'days_in_top10': 'Top 10 유지일수'
-    },
+    hover_data={'first_scrn': ':,f', 'total_audi': ':,f', 'days_in_top10': True, 'main_genre': False},
+    labels={'first_scrn': '개봉일 스크린 수 (개)', 'total_audi': '총 관객 수 (명)', 'main_genre': '장르', 'days_in_top10': 'Top 10 유지일수'},
     opacity=0.8,
     color_discrete_sequence=px.colors.qualitative.Set2
 )
 
-fig_scatter_scrn.update_layout(
-    height=500,
-    margin=dict(t=30, b=30, l=10, r=10),
-    xaxis=dict(tickformat=","),
-    yaxis=dict(tickformat=",")
-)
-
+fig_scatter_scrn.update_layout(height=500, margin=dict(t=30, b=30, l=10, r=10), xaxis=dict(tickformat=","), yaxis=dict(tickformat=","))
 st.plotly_chart(fig_scatter_scrn, use_container_width=True)
 
 st.markdown("""
@@ -238,9 +253,9 @@ st.markdown("""
 st.divider()
 
 # ---------------------------------------------------------
-# 그래프 4: 개봉 첫 주 관객 수 vs 총 관객 수 (상관관계 분석)
+# 그래프 5: 개봉 첫 주 관객 수 vs 총 관객 수 (상관관계 분석)
 # ---------------------------------------------------------
-st.subheader("4. 개봉 첫 주 관객 수와 총 관객 수의 상관관계")
+st.subheader("5. 개봉 첫 주 관객 수와 총 관객 수의 상관관계")
 
 fig_scatter_week = px.scatter(
     filtered_df,
@@ -250,26 +265,12 @@ fig_scatter_week = px.scatter(
     hover_name='movieNm',
     trendline='ols',
     trendline_color_override='red',
-    hover_data={
-        'first_week_audi': ':,f',
-        'total_audi': ':,f',
-        'nation': True
-    },
-    labels={
-        'first_week_audi': '개봉 첫 주 관객 수 (명)',
-        'total_audi': '총 관객 수 (명)',
-        'nation': '제작 국가'
-    },
+    hover_data={'first_week_audi': ':,f', 'total_audi': ':,f', 'nation': True},
+    labels={'first_week_audi': '개봉 첫 주 관객 수 (명)', 'total_audi': '총 관객 수 (명)', 'nation': '제작 국가'},
     opacity=0.75
 )
 
-fig_scatter_week.update_layout(
-    height=500,
-    margin=dict(t=30, b=30, l=10, r=10),
-    xaxis=dict(tickformat=","),
-    yaxis=dict(tickformat=",")
-)
-
+fig_scatter_week.update_layout(height=500, margin=dict(t=30, b=30, l=10, r=10), xaxis=dict(tickformat=","), yaxis=dict(tickformat=","))
 st.plotly_chart(fig_scatter_week, use_container_width=True)
 
 st.markdown("""
@@ -282,9 +283,9 @@ st.markdown("""
 st.divider()
 
 # ---------------------------------------------------------
-# 그래프 5: 장르별 Top 10 머문 날수 분포 (박스플롯)
+# 그래프 6: 장르별 Top 10 머문 날수 분포 (박스플롯)
 # ---------------------------------------------------------
-st.subheader("5. 장르별 Top 10 랭킹 유지 기간(일수) 분포")
+st.subheader("6. 장르별 Top 10 랭킹 유지 기간(일수) 분포")
 
 fig_box = px.box(
     filtered_df,
@@ -293,18 +294,10 @@ fig_box = px.box(
     color='main_genre',
     points='all',
     hover_name='movieNm',
-    labels={
-        'main_genre': '장르',
-        'days_in_top10': 'Top 10 머문 날수 (일)'
-    }
+    labels={'main_genre': '장르', 'days_in_top10': 'Top 10 머문 날수 (일)'}
 )
 
-fig_box.update_layout(
-    height=450,
-    showlegend=False,
-    margin=dict(t=30, b=30, l=10, r=10)
-)
-
+fig_box.update_layout(height=450, showlegend=False, margin=dict(t=30, b=30, l=10, r=10))
 st.plotly_chart(fig_box, use_container_width=True)
 
 st.markdown("""
