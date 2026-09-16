@@ -403,50 +403,41 @@ st.markdown("""
 st.divider()
 
 # ---------------------------------------------------------
-# 그래프 8: 장르별 Top 10 영화의 총 관객 수 합계 (막대 그래프)
+# 그래프 8: 장르별 Top 10 영화 관객 수 분포 (선버스트 차트)
 # ---------------------------------------------------------
-st.subheader("8. 장르별 관객 수 Top 10 영화의 총 관객 수 합계")
+st.subheader("8. 장르별 Top 10 영화 관객 수 분포 (선버스트 차트)")
 
-# 장르별로 관객 수 상위 10개 영화만 추출 (pandas 버전에 무관한 안전한 추출)
+# 장르별로 관객 수 상위 10개 영화 추출
 top10_by_genre = (
     filtered_df.sort_values('total_audi', ascending=False)
     .groupby('main_genre')
     .head(10)
 )
 
-genre_top10_sum = (
-    top10_by_genre.groupby('main_genre')['total_audi']
-    .sum()
-    .reset_index()
-    .sort_values(by='total_audi', ascending=False)
-)
-
-fig_bar_top10 = px.bar(
-    genre_top10_sum,
-    x='main_genre',
-    y='total_audi',
+fig_sunburst_top10 = px.sunburst(
+    top10_by_genre,
+    path=['main_genre', 'movieNm'],
+    values='total_audi',
     color='main_genre',
-    labels={'main_genre': '장르', 'total_audi': 'Top 10 영화 관객 수 합계 (명)'},
     color_discrete_sequence=px.colors.qualitative.Bold
 )
 
-fig_bar_top10.update_traces(
-    hovertemplate="<b>장르: %{x}</b><br>Top 10 관객 수 합계: %{y:,.0f}명<extra></extra>"
+fig_sunburst_top10.update_traces(
+    textinfo='label+percent entry',
+    hovertemplate="<b>%{label}</b><br>총 관객 수: %{value:,.0f}명<extra></extra>"
 )
 
-fig_bar_top10.update_layout(
-    height=500,
-    showlegend=False,
-    margin=dict(t=30, b=30, l=10, r=10),
-    yaxis=dict(tickformat=",")
+fig_sunburst_top10.update_layout(
+    height=550,
+    margin=dict(t=30, b=30, l=10, r=10)
 )
 
-st.plotly_chart(fig_bar_top10, use_container_width=True)
+st.plotly_chart(fig_sunburst_top10, use_container_width=True)
 
 st.markdown("""
 <div class="insight-box">
     <div class="insight-title">💡 이 그래프로 알 수 있는 것</div>
-    각 장르 내에서 <b>가장 흥행한 상위 10개 영화의 총 관객 수 합계</b>를 파악할 수 있습니다. 비주류 장르를 제외하고, 10위권 대표 흥행작들의 동원력이 가장 강력한 장르가 무엇인지 한눈에 비교 가능합니다.
+    중앙 링의 <b>장르(`main_genre`)</b>에서 바깥쪽 링의 <b>영화명(`movieNm`)</b>으로 이어지는 계층 구조입니다. 각 장르 내 흥행 Top 10 영화들이 차지하는 총 관객 수 비율과 세부 영화별 동원력을 한눈에 비교할 수 있습니다.
 </div>
 """, unsafe_allow_html=True)
 
