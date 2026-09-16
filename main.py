@@ -403,37 +403,48 @@ st.markdown("""
 st.divider()
 
 # ---------------------------------------------------------
-# 그래프 8: 전체 흥행 Top 10 영화의 장르 분포 및 총 관객 수 (선버스트 차트)
+# 그래프 8: 전체 관객 수 Top 10 흥행작 순위 및 장르 (가로 막대그래프)
 # ---------------------------------------------------------
-st.subheader("8. 전체 관객 수 Top 10 흥행작의 장르 분포 및 관객 수 (선버스트 차트)")
+st.subheader("8. 전체 관객 수 Top 10 흥행작 순위 및 장르 (가로 막대그래프)")
 
-# 전체 관객 수 기준 상위 10개 흥행 영화 추출
-top10_overall = filtered_df.nlargest(10, 'total_audi')
+# 전체 관객 수 기준 상위 10개 영화 추출 (Y축 상단에 1위가 오도록 정렬)
+top10_overall = (
+    filtered_df.nlargest(10, 'total_audi')
+    .sort_values('total_audi', ascending=True)
+)
 
-fig_sunburst_top10_overall = px.sunburst(
+fig_bar_top10 = px.bar(
     top10_overall,
-    path=['main_genre', 'movieNm'],
-    values='total_audi',
+    x='total_audi',
+    y='movieNm',
     color='main_genre',
+    orientation='h',
+    labels={
+        'total_audi': '총 관객 수 (명)',
+        'movieNm': '영화명',
+        'main_genre': '장르'
+    },
     color_discrete_sequence=px.colors.qualitative.Set2
 )
 
-fig_sunburst_top10_overall.update_traces(
-    textinfo='label+percent entry',
-    hovertemplate="<b>%{label}</b><br>총 관객 수: %{value:,.0f}명<extra></extra>"
+fig_bar_top10.update_traces(
+    hovertemplate="<b>영화명: %{y}</b><br>장르: %{customdata[0]}<br>총 관객 수: %{x:,.0f}명<extra></extra>",
+    customdata=top10_overall[['main_genre']]
 )
 
-fig_sunburst_top10_overall.update_layout(
-    height=550,
-    margin=dict(t=30, b=30, l=10, r=10)
+fig_bar_top10.update_layout(
+    height=500,
+    margin=dict(t=30, b=30, l=10, r=10),
+    xaxis=dict(tickformat=","),
+    legend_title_text='장르'
 )
 
-st.plotly_chart(fig_sunburst_top10_overall, use_container_width=True)
+st.plotly_chart(fig_bar_top10, use_container_width=True)
 
 st.markdown("""
 <div class="insight-box">
     <div class="insight-title">💡 이 그래프로 알 수 있는 것</div>
-    전체 관객 수 기준 <b>흥행 Top 10 영화</b>들이 어떤 장르로 구성되어 있는지 비율을 한눈에 파악할 수 있습니다. 안쪽 링의 장르 영역이나 바깥쪽 링의 영화에 마우스를 올리면 각 장르 및 개별 영화의 <b>총 관객 수</b>를 즉시 확인할 수 있습니다.
+    전체 관객 수 기준 <b>흥행 1위부터 10위까지의 직관적인 순위</b>를 한눈에 확인할 수 있습니다. 가장 길게 뻗은 맨 위의 막대가 관객 수 1위 영화이며, 막대 색상을 통해 해당 흥행작의 <b>장르</b>를, 마우스를 올리면 정확한 <b>총 관객 수</b>를 즉시 비교할 수 있습니다.
 </div>
 """, unsafe_allow_html=True)
 
