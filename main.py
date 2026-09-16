@@ -7,7 +7,7 @@ import plotly.express as px
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="영화 데이터 분석 - 종합 시각화",
-    page_icon="❤️❤️❤️❤️❤️",
+    page_icon="🎬",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -311,7 +311,7 @@ if not df_box_g5.empty:
         <div class="insight-title">💡 이 그래프로 알 수 있는 것</div>
         영화가 10편 이상 수집된 주요 장르별로 총 관객 수의 박스플롯 분포를 한눈에 볼 수 있습니다. 상자 외부로 벗어난 이상치 점에 마우스를 올려놓으면 평균적인 범주를 훌쩍 넘어서서 대흥행을 이뤄낸 특정 영화명을 바로 확인할 수 있습니다.
     </div>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 else:
     st.info("선택한 조건 내에 영화 편수가 10편 이상인 장르가 존재하지 않습니다.")
 
@@ -407,11 +407,11 @@ st.divider()
 # ---------------------------------------------------------
 st.subheader("8. 장르별 관객 수 Top 10 영화의 총 관객 수 합계")
 
-# 장르별로 관객 수 상위 10개 영화만 추출하여 합계 계산
+# 장르별로 관객 수 상위 10개 영화만 추출 (pandas 버전에 무관한 안전한 추출)
 top10_by_genre = (
-    filtered_df.groupby('main_genre')
-    .apply(lambda x: x.nlargest(10, 'total_audi'))
-    .reset_index(drop=True)
+    filtered_df.sort_values('total_audi', ascending=False)
+    .groupby('main_genre')
+    .head(10)
 )
 
 genre_top10_sum = (
