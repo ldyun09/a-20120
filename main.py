@@ -403,41 +403,37 @@ st.markdown("""
 st.divider()
 
 # ---------------------------------------------------------
-# 그래프 8: 장르별 Top 10 영화 관객 수 분포 (선버스트 차트)
+# 그래프 8: 전체 흥행 Top 10 영화의 장르 분포 및 총 관객 수 (선버스트 차트)
 # ---------------------------------------------------------
-st.subheader("8. 장르별 Top 10 영화 관객 수 분포 (선버스트 차트)")
+st.subheader("8. 전체 관객 수 Top 10 흥행작의 장르 분포 및 관객 수 (선버스트 차트)")
 
-# 장르별로 관객 수 상위 10개 영화 추출
-top10_by_genre = (
-    filtered_df.sort_values('total_audi', ascending=False)
-    .groupby('main_genre')
-    .head(10)
-)
+# 전체 관객 수 기준 상위 10개 흥행 영화 추출
+top10_overall = filtered_df.nlargest(10, 'total_audi')
 
-fig_sunburst_top10 = px.sunburst(
-    top10_by_genre,
+fig_sunburst_top10_overall = px.sunburst(
+    top10_overall,
     path=['main_genre', 'movieNm'],
     values='total_audi',
     color='main_genre',
-    color_discrete_sequence=px.colors.qualitative.Bold
+    color_discrete_sequence=px.colors.qualitative.Set2
 )
 
-fig_sunburst_top10.update_traces(
+fig_sunburst_top10_overall.update_traces(
     textinfo='label+percent entry',
     hovertemplate="<b>%{label}</b><br>총 관객 수: %{value:,.0f}명<extra></extra>"
 )
 
-fig_sunburst_top10.update_layout(
+fig_sunburst_top10_overall.update_layout(
     height=550,
     margin=dict(t=30, b=30, l=10, r=10)
 )
 
-st.plotly_chart(fig_sunburst_top10, use_container_width=True)
+st.plotly_chart(fig_sunburst_top10_overall, use_container_width=True)
 
 st.markdown("""
 <div class="insight-box">
     <div class="insight-title">💡 이 그래프로 알 수 있는 것</div>
-    중앙 링의 <b>장르(`main_genre`)</b>에서 바깥쪽 링의 <b>영화명(`movieNm`)</b>으로 이어지는 계층 구조입니다. 각 장르 내 흥행 Top 10 영화들이 차지하는 총 관객 수 비율과 세부 영화별 동원력을 한눈에 비교할 수 있습니다.
+    전체 관객 수 기준 <b>흥행 Top 10 영화</b>들이 어떤 장르로 구성되어 있는지 비율을 한눈에 파악할 수 있습니다. 안쪽 링의 장르 영역이나 바깥쪽 링의 영화에 마우스를 올리면 각 장르 및 개별 영화의 <b>총 관객 수</b>를 즉시 확인할 수 있습니다.
 </div>
 """, unsafe_allow_html=True)
 
