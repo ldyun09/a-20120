@@ -363,7 +363,7 @@ st.plotly_chart(fig_bubble, use_container_width=True)
 st.markdown("""
 <div class="insight-box">
     <div class="insight-title">💡 이 그래프로 알 수 있는 것</div>
-    개봉일 스크린 수(X축)와 최종 총 관객 수(Y축)의 관계 외에도 <b>버블의 크기(첫 주 관객 수)</b>를 통해 초반 흥행 몰이 속도를 한눈에 비교할 수 있습니다. 버블이 크고 위쪽에 위치한 영화는 개봉 첫 주부터 강력한 관객 동원력을 발휘한 작품입니다.
+    개봉일 스크린 수(X축)와 최종 총 관객 수(Y축)의 관계 외에도 <b>버블의 크기(첫 주 관객 수)</b>를 통해 초반 흥행 몰이 속도를 한눈에 비교할 수 있습니다.
 </div>
 """, unsafe_allow_html=True)
 
@@ -403,9 +403,59 @@ st.markdown("""
 st.divider()
 
 # ---------------------------------------------------------
-# 그래프 8: 장르별 Top 10 머문 날수 분포 (박스플롯)
+# 그래프 8: 장르별 Top 10 영화의 총 관객 수 합계 (막대 그래프)
 # ---------------------------------------------------------
-st.subheader("8. 장르별 Top 10 랭킹 유지 기간(일수) 분포")
+st.subheader("8. 장르별 관객 수 Top 10 영화의 총 관객 수 합계")
+
+# 장르별로 관객 수 상위 10개 영화만 추출하여 합계 계산
+top10_by_genre = (
+    filtered_df.groupby('main_genre')
+    .apply(lambda x: x.nlargest(10, 'total_audi'))
+    .reset_index(drop=True)
+)
+
+genre_top10_sum = (
+    top10_by_genre.groupby('main_genre')['total_audi']
+    .sum()
+    .reset_index()
+    .sort_values(by='total_audi', ascending=False)
+)
+
+fig_bar_top10 = px.bar(
+    genre_top10_sum,
+    x='main_genre',
+    y='total_audi',
+    color='main_genre',
+    labels={'main_genre': '장르', 'total_audi': 'Top 10 영화 관객 수 합계 (명)'},
+    color_discrete_sequence=px.colors.qualitative.Bold
+)
+
+fig_bar_top10.update_traces(
+    hovertemplate="<b>장르: %{x}</b><br>Top 10 관객 수 합계: %{y:,.0f}명<extra></extra>"
+)
+
+fig_bar_top10.update_layout(
+    height=500,
+    showlegend=False,
+    margin=dict(t=30, b=30, l=10, r=10),
+    yaxis=dict(tickformat=",")
+)
+
+st.plotly_chart(fig_bar_top10, use_container_width=True)
+
+st.markdown("""
+<div class="insight-box">
+    <div class="insight-title">💡 이 그래프로 알 수 있는 것</div>
+    각 장르 내에서 <b>가장 흥행한 상위 10개 영화의 총 관객 수 합계</b>를 파악할 수 있습니다. 비주류 장르를 제외하고, 10위권 대표 흥행작들의 동원력이 가장 강력한 장르가 무엇인지 한눈에 비교 가능합니다.
+</div>
+""", unsafe_allow_html=True)
+
+st.divider()
+
+# ---------------------------------------------------------
+# 그래프 9: 장르별 Top 10 머문 날수 분포 (박스플롯)
+# ---------------------------------------------------------
+st.subheader("9. 장르별 Top 10 랭킹 유지 기간(일수) 분포")
 
 fig_box = px.box(
     filtered_df,
